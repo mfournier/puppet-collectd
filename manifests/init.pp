@@ -30,15 +30,31 @@ class collectd (
   $manage_package = true
 ) {
 
+  anchor {'collectd::begin': }
+  anchor {'collectd::end': }
+
   class { '::collectd::package':
     version        => $version,
     manage_package => $manage_package,
-  } ~>
+    notify         => Class['::collectd::service'],
+  }
+
   class { '::collectd::config':
     confdir  => $confdir,
     rootdir  => $rootdir,
     interval => $interval,
-  } ~>
+    notify   => Class['::collectd::service'],
+  }
+
   class { '::collectd::service': }
+
+  Anchor['collectd::begin']
+  -> Class['collectd::package']
+  -> Class['collectd::config']
+  -> Collectd::Setup::Loadplugin <| |>
+  -> Collectd::Config::Plugin <| |>
+  -> Collectd::Config::Chain <| |>
+  -> Collectd::Config::Global <| |>
+  -> Class['collectd::service']
 
 }
